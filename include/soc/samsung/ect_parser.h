@@ -355,6 +355,7 @@ struct ect_gen_param_table *ect_gen_param_get_table(void *block, char *table_nam
 struct ect_bin *ect_binary_get_bin(void *block, char *binary_name);
 
 void ect_init_map_io(void);
+void setup_ect(void);
 
 int ect_strcmp(char *src1, char *src2);
 

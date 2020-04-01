@@ -1,4 +1,53 @@
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
 #include <soc/samsung/ect_parser.h>
+
+/*from setup.c*/
+#include <linux/export.h>
+#include <linux/stddef.h>
+#include <linux/ioport.h>
+#include <linux/delay.h>
+#include <linux/utsname.h>
+#include <linux/initrd.h>
+#include <linux/console.h>
+#include <linux/cache.h>
+#include <linux/bootmem.h>
+#include <linux/seq_file.h>
+#include <linux/screen_info.h>
+#include <linux/init.h>
+#include <linux/kexec.h>
+#include <linux/crash_dump.h>
+#include <linux/root_dev.h>
+#include <linux/clk-provider.h>
+#include <linux/cpu.h>
+#include <linux/interrupt.h>
+#include <linux/smp.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/memblock.h>
+#include <linux/of_fdt.h>
+#include <linux/of_platform.h>
+#include <linux/efi.h>
+#include <linux/personality.h>
+
+#include <asm/fixmap.h>
+#include <asm/cpu.h>
+#include <asm/cputype.h>
+#include <asm/elf.h>
+#include <asm/cputable.h>
+#include <asm/cpufeature.h>
+#include <asm/cpu_ops.h>
+#include <asm/sections.h>
+#include <asm/setup.h>
+#include <asm/smp_plat.h>
+#include <asm/cacheflush.h>
+#include <asm/tlbflush.h>
+#include <asm/traps.h>
+#include <asm/memblock.h>
+#include <asm/psci.h>
+#include <asm/efi.h>
+/*from setup.c*/
 
 #include <asm/map.h>
 #include <asm/memory.h>
@@ -2125,5 +2174,61 @@ int ect_strcmp(char *src1, char *src2)
 
 void __init ect_init_map_io(void)
 {
+    printk(KERN_INFO "Init ECT module\n");
 	iotable_init(&exynos_iodesc_ect, 1);
 }
+
+static struct of_device_id ect_of_device_ids[] = {
+	{.compatible = "exynos", },
+	{},
+};
+
+static struct platform_device_id ect_plat_device_ids[] = {
+	{.name = "ect"},
+	{},
+};
+
+//static struct platform_driver ect_parser = {
+////        .probe = ect_probe,
+////        .remove = ect_remove,
+//        .id_table = ect_plat_device_ids,
+//        .driver = {
+//                .name = "ect",
+//                .owner = THIS_MODULE,
+//                .of_match_table = ect_of_device_ids,
+//        },
+//};
+
+void setup_ect(void)
+{
+    const struct of_device_id *match;
+	struct device_node *np;
+    printk(KERN_INFO "Setup ECT module\n");
+    int address, size;
+    address = 0;
+    size = 0;
+
+    for_each_matching_node_and_match(np, ect_of_device_ids, &match) {
+        printk(KERN_INFO "Match found in device tree!\n");
+        	if (of_property_read_u32(np, "parameter_address", &address)) {
+        			return -EINVAL;
+        	}
+            pr_info("parameter_address is: %d\n", address);
+
+            if (of_property_read_u32(np, "parameter_size", &size)) {
+        			return;
+        	}
+            pr_info("parameter_size is: %d\n", size);
+            pr_info("[ECT] Address %x, Size %x\b", be32_to_cpu(address), be32_to_cpu(size));
+            pr_info("[ECT] Address %d, Size %d\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
+    }
+    ect_init_map_io();
+    memblock_reserve(be32_to_cpu(address), be32_to_cpu(size));
+    ect_init(be32_to_cpu(address), be32_to_cpu(size));
+}
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Dzmitry Sankouski dsankouski@gmail.com");
+MODULE_AUTHOR("Unknown samsung developer");
+MODULE_DESCRIPTION("Samsung Exynos calibration table parser module.");
+MODULE_VERSION("0.01");

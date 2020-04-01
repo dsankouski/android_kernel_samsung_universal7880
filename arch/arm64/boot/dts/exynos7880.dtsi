@@ -351,6 +351,7 @@
 	};
 
 	ect {
+	    compatible = "exynos,ect";
 		parameter_address = <0x67FEB000>;
 		parameter_size = <0x14000>;
 	};
