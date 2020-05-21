@@ -29,7 +29,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ram ess_setup=0x46000000 clk_ignore_unused androidboot.hardware=samsungexynos7880 firmware_class.path=/vendor/firmware reserve-fimc=0 androidboot.debug_level=0x4948 androidboot.selinux=permissive";
+		bootargs = "earlycon=exynos,0x13820000,115200n8 console=ttySAC2,115200 ess_setup=0x46000000 clk_ignore_unused androidboot.hardware=samsungexynos7880 firmware_class.path=/vendor/firmware reserve-fimc=0 androidboot.debug_level=0x4948 androidboot.selinux=permissive";
 		linux,initrd-start = <0x52000000>;
 		linux,initrd-end = <0x521FFFFF>;
 	};
