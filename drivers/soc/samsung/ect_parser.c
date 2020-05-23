@@ -2062,6 +2062,8 @@ int ect_parse_binary_header(void)
 	unsigned int length, offset;
 	struct ect_header *ect_header;
 
+	print_binary_data();
+
 	address = (void *)ect_address;
 	if (address == NULL)
 		return -EINVAL;
@@ -2121,6 +2123,33 @@ int ect_strcmp(char *src1, char *src2)
 			return 0;
 
 	return ((*(unsigned char *)src1 < *(unsigned char *)src2) ? -1 : +1);
+}
+
+void print_binary_data(void) {
+    pr_info("Printing ect binary data:\n");
+
+    void *pdata;
+    unsigned char value;
+    unsigned char data[10];
+    pdata = (void *)ect_address;
+
+    int i;
+	unsigned int j;
+
+    for (i = 0; i < 9000; i += 10) {
+        for (j = 0; j < 10; j++) {
+            if (i + j >= ect_size) {
+                break;
+            }
+            data[j] = __raw_readb(pdata);
+            pdata++;
+
+        }
+        pr_info("%#04x %#04x %#04x %#04x %#04x %#04x %#04x %#04x %#04x %#04x\n",
+                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]
+        );
+    }
+    pr_info("end of printing ect binary data\n");
 }
 
 void __init ect_init_map_io(void)
