@@ -1,6 +1,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/bug.h>
 #include <soc/samsung/ect_parser.h>
 
 /*from setup.c*/
@@ -55,6 +56,7 @@
 #define ALIGNMENT_SIZE	 4
 
 #define S5P_VA_ECT (VMALLOC_START + 0xF6000000 + 0x02D00000)
+void __iomem *regs;
 
 /* Variable */
 
@@ -2222,9 +2224,22 @@ void setup_ect(void)
             pr_info("[ECT] Address %x, Size %x\b", be32_to_cpu(address), be32_to_cpu(size));
             pr_info("[ECT] Address %d, Size %d\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
     }
-    ect_init_map_io();
-    memblock_reserve(be32_to_cpu(address), be32_to_cpu(size));
-    ect_init(be32_to_cpu(address), be32_to_cpu(size));
+    void *data = kzalloc(size, GFP_KERNEL);
+    regs = ioremap(be32_to_cpu(address), be32_to_cpu(size));
+    void *pdata = data;
+
+    for (int i = 0; i < size; i++) {
+        *(pdata + i) = readl(regs + i);
+        pr_info("%#04x\n", *(pdata + i));
+    }
+
+    ect_address = data;
+//    ect_init_map_io();
+//    memblock_reserve(be32_to_cpu(address), be32_to_cpu(size));
+//    ect_init(be32_to_cpu(address), be32_to_cpu(size));
+//    ect_parse_binary_header();
+
+    BUG_ON();
 }
 
 MODULE_LICENSE("GPL");
