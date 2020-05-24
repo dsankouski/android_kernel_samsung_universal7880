@@ -2199,7 +2199,7 @@ void __init ect_init_map_io(void)
 }
 
 static struct of_device_id ect_of_device_ids[] = {
-	{.compatible = "exynos", },
+	{.compatible = "exynos,ect", },
 	{},
 };
 
