@@ -2243,7 +2243,7 @@ void setup_ect(void)
             pr_info("[ECT] Address %d, Size %d\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
     }
     void __iomem* regs;
-    regs = ioremap(be32_to_cpu(address), be32_to_cpu(size));
+    regs = early_ioremap(be32_to_cpu(address), be32_to_cpu(size));
     print_binary_data(regs);
 
 //    ect_init_map_io();
