@@ -2244,6 +2244,10 @@ void setup_ect(void)
     }
     void __iomem* regs;
     regs = early_ioremap(be32_to_cpu(address), be32_to_cpu(size));
+    if (!regs) {
+        pr_info("[ECT] Cannot remap memory");
+        BUG_ON(regs);
+    }
     print_binary_data(regs);
 
 //    ect_init_map_io();
