@@ -2243,7 +2243,7 @@ void setup_ect(void)
             pr_info("[ECT] Address %d, Size %d\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
     }
     void __iomem* regs;
-    regs = ioremap(be32_to_cpu(address), be32_to_cpu(size));
+    regs = ioremap_nocache(be32_to_cpu(address), be32_to_cpu(size));
     if (!regs) {
         pr_info("[ECT] Cannot remap memory");
         BUG_ON(regs);
