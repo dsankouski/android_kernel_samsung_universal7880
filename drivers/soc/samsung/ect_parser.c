@@ -2237,14 +2237,14 @@ void setup_ect(void)
         	if (of_property_read_u32(np, "parameter_address", &address)) {
         			return -EINVAL;
         	}
-            pr_info("parameter_address is: %d\n", address);
+            pr_info("parameter_address is: %x\n", address);
 
             if (of_property_read_u32(np, "parameter_size", &size)) {
         			return;
         	}
-            pr_info("parameter_size is: %d\n", size);
+            pr_info("parameter_size is: %x\n", size);
             pr_info("[ECT] Address %x, Size %x\b", be32_to_cpu(address), be32_to_cpu(size));
-            pr_info("[ECT] Address %d, Size %d\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
+            pr_info("[ECT] Address %x, Size %x\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
     }
     void __iomem* regs;
     regs = ioremap_nocache(be32_to_cpu(address), be32_to_cpu(size));
