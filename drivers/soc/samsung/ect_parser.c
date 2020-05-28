@@ -2180,6 +2180,10 @@ void print_binary_data(void __iomem *ioaddr) {
     unsigned char data[10];
     int i;
 	unsigned int j;
+	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr + 8));
+	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr + 4));
+	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr + 1));
+	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr));
 
     for (i = 0; i < 9000; i += 10) {
         for (j = 0; j < 10; j++) {
