@@ -2180,6 +2180,7 @@ void print_binary_data(void __iomem *ioaddr) {
     unsigned char data[10];
     int i;
 	unsigned int j;
+	pr_info("[ECT] Remapped virtual address is: %#04x", ioaddr);
 	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr + 8));
 	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr + 4));
 	pr_info("[ECT] Test memory read at address %#04x: %#04x", ioaddr, readb(ioaddr + 1));
