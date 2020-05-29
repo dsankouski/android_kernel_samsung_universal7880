@@ -1,17 +1,73 @@
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/bug.h>
 #include <soc/samsung/ect_parser.h>
+
+/*from setup.c*/
+#include <linux/export.h>
+#include <linux/stddef.h>
+#include <linux/ioport.h>
+#include <linux/delay.h>
+#include <linux/utsname.h>
+#include <linux/initrd.h>
+#include <linux/console.h>
+#include <linux/cache.h>
+#include <linux/bootmem.h>
+#include <linux/seq_file.h>
+#include <linux/screen_info.h>
+#include <linux/init.h>
+#include <linux/kexec.h>
+#include <linux/crash_dump.h>
+#include <linux/root_dev.h>
+#include <linux/clk-provider.h>
+#include <linux/cpu.h>
+#include <linux/interrupt.h>
+#include <linux/smp.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/memblock.h>
+#include <linux/of_fdt.h>
+#include <linux/of_platform.h>
+#include <linux/efi.h>
+#include <linux/personality.h>
+
+#include <asm/fixmap.h>
+#include <asm/cpu.h>
+#include <asm/cputype.h>
+#include <asm/elf.h>
+#include <asm/cputable.h>
+#include <asm/cpufeature.h>
+#include <asm/cpu_ops.h>
+#include <asm/sections.h>
+#include <asm/setup.h>
+#include <asm/smp_plat.h>
+#include <asm/cacheflush.h>
+#include <asm/tlbflush.h>
+#include <asm/traps.h>
+#include <asm/memblock.h>
+#include <asm/psci.h>
+#include <asm/efi.h>
+/*from setup.c*/
 
 #include <asm/map.h>
 #include <asm/memory.h>
+#include <asm/uaccess.h>
+
+#include <linux/vmalloc.h>
 
 #define ALIGNMENT_SIZE	 4
 
 #define S5P_VA_ECT (VMALLOC_START + 0xF6000000 + 0x02D00000)
+void __iomem *regs;
 
 /* Variable */
 
 static struct ect_info ect_list[];
 
 static char ect_signature[] = "PARA";
+
+static struct vm_struct ect_early_vm;
 
 static struct map_desc exynos_iodesc_ect __initdata = {
 	.type           = MT_NORMAL_NC,
@@ -1790,18 +1846,6 @@ late_initcall_sync(ect_dump_init);
 static phys_addr_t ect_address;
 static phys_addr_t ect_size;
 
-void __init ect_init(phys_addr_t address, phys_addr_t size)
-{
-	for (ect_size = 1; ect_size < size;)
-		ect_size = ect_size << 1;
-
-	exynos_iodesc_ect.length = ect_size;
-	exynos_iodesc_ect.pfn = __phys_to_pfn(address);
-	exynos_iodesc_ect.virtual = (unsigned long)S5P_VA_ECT;
-
-	ect_address = (phys_addr_t)S5P_VA_ECT;
-}
-
 void *ect_get_block(char *block_name)
 {
 	unsigned int i;
@@ -2062,7 +2106,6 @@ int ect_parse_binary_header(void)
 	unsigned int length, offset;
 	struct ect_header *ect_header;
 
-	print_binary_data();
 
 	address = (void *)ect_address;
 	if (address == NULL)
@@ -2152,7 +2195,86 @@ void print_binary_data(void) {
     pr_info("end of printing ect binary data\n");
 }
 
-void __init ect_init_map_io(void)
+void __init ect_init(phys_addr_t address, phys_addr_t size)
 {
-	iotable_init(&exynos_iodesc_ect, 1);
+    printk(KERN_INFO "Init ECT module\n");
+	ect_early_vm.phys_addr = address;
+	ect_early_vm.addr = (void *)S5P_VA_ECT;
+	ect_early_vm.size = size;
+
+	vm_area_add_early(&ect_early_vm);
+
+	ect_address = (phys_addr_t)S5P_VA_ECT;
+	ect_size = size;
 }
+
+
+
+void ect_init_map_io(void)
+{
+	int page_size, i;
+	struct page *page;
+	struct page **pages;
+	int ret;
+
+	page_size = ect_early_vm.size / PAGE_SIZE;
+	if (ect_early_vm.size % PAGE_SIZE)
+		page_size++;
+	pages = kzalloc((sizeof(struct page *) * page_size), GFP_KERNEL);
+	page = phys_to_page(ect_early_vm.phys_addr);
+
+	for (i = 0; i < page_size; ++i)
+		pages[i] = page++;
+
+	ret = map_vm_area(&ect_early_vm, PAGE_KERNEL, pages);
+	if (ret) {
+		pr_err("[ECT] : failed to mapping va and pa(%d)\n", ret);
+	}
+	kfree(pages);
+}
+
+static struct of_device_id ect_of_device_ids[] = {
+	{.compatible = "exynos,ect", },
+	{},
+};
+
+static struct platform_device_id ect_plat_device_ids[] = {
+	{.name = "ect"},
+	{},
+};
+
+void setup_ect(void)
+{
+    const struct of_device_id *match;
+	struct device_node *np;
+    printk(KERN_INFO "Setup ECT module\n");
+    __be32 address, size;
+    address = 0;
+    size = 0;
+
+    for_each_matching_node_and_match(np, ect_of_device_ids, &match) {
+        printk(KERN_INFO "Match found in device tree!\n");
+        	if (of_property_read_u32(np, "parameter_address", &address)) {
+        			return;
+        	}
+            pr_info("parameter_address is: %x\n", address);
+
+            if (of_property_read_u32(np, "parameter_size", &size)) {
+        			return;
+        	}
+            pr_info("parameter_size is: %x\n", size);
+            pr_info("[ECT] Address %x, Size %x\b", be32_to_cpu(address), be32_to_cpu(size));
+            pr_info("[ECT] Address %x, Size %x\b", cpu_to_be32(be32_to_cpu(address)), cpu_to_be32(be32_to_cpu(size)));
+    }
+    ect_init(be32_to_cpu(address), be32_to_cpu(size));
+    ect_init_map_io();
+    print_binary_data();
+
+    BUG();
+}
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Dzmitry Sankouski dsankouski@gmail.com");
+MODULE_AUTHOR("Unknown samsung developer");
+MODULE_DESCRIPTION("Samsung Exynos calibration table parser module.");
+MODULE_VERSION("0.01");

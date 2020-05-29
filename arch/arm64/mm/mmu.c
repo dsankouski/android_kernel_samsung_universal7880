@@ -514,10 +514,6 @@ void __init paging_init(void)
 #endif
 	map_mem();
 
-#if defined(CONFIG_ECT)
-	ect_init_map_io();
-#endif
-
 	/*
 	 * Finally flush the caches and tlb to ensure that we're in a
 	 * consistent state.

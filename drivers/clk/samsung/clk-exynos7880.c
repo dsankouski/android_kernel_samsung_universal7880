@@ -316,6 +316,8 @@ void __init exynos7880_clk_init(struct device_node *np)
 	void __iomem *reg_base;
 	int ret;
 
+	setup_ect();
+
 	if (np) {
 		reg_base = of_iomap(np, 0);
 		if (!reg_base)
